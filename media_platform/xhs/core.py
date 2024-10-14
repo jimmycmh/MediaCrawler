@@ -3,6 +3,7 @@ import os
 import random
 from asyncio import Task
 from typing import Dict, List, Optional, Tuple
+import shutil
 
 from playwright.async_api import (BrowserContext, BrowserType, Page,
                                   async_playwright)
@@ -16,7 +17,7 @@ from tools import utils
 from var import crawler_type_var, source_keyword_var
 
 from .client import XiaoHongShuClient
-from .exception import DataFetchError
+from .exception import DataFetchError, UserBlockError
 from .field import SearchSortType
 from .login import XiaoHongShuLogin
 
@@ -30,6 +31,7 @@ class XiaoHongShuCrawler(AbstractCrawler):
         self.index_url = "https://www.xiaohongshu.com"
         # self.user_agent = utils.get_user_agent()
         self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+        self.INVALID_USER = "用户已注销"
 
     async def start(self) -> None:
         playwright_proxy_format, httpx_proxy_format = None, None
@@ -61,7 +63,8 @@ class XiaoHongShuCrawler(AbstractCrawler):
 
             # Create a client to interact with the xiaohongshu website.
             self.xhs_client = await self.create_xhs_client(httpx_proxy_format)
-            if not await self.xhs_client.pong():
+            retry = 3
+            while retry > 0 and not await self.xhs_client.pong():
                 login_obj = XiaoHongShuLogin(
                     login_type=config.LOGIN_TYPE,
                     login_phone="",  # input your phone number
@@ -71,6 +74,11 @@ class XiaoHongShuCrawler(AbstractCrawler):
                 )
                 await login_obj.begin()
                 await self.xhs_client.update_cookies(browser_context=self.browser_context)
+                await asyncio.sleep(30)
+                retry = retry - 1
+            if retry == 0:
+                utils.logger.info("[XiaoHongShuCrawler.start] Xhs Crawler failed to login. Quit ...")
+                return
 
             crawler_type_var.set(config.CRAWLER_TYPE)
             if config.CRAWLER_TYPE == "search":
@@ -143,26 +151,75 @@ class XiaoHongShuCrawler(AbstractCrawler):
     async def get_creators_and_notes(self) -> None:
         """Get creator's notes and retrieve their comment information."""
         utils.logger.info("[XiaoHongShuCrawler.get_creators_and_notes] Begin get xiaohongshu creators")
-        for user_id in config.XHS_CREATOR_ID_LIST:
+        user_ids = config.XHS_CREATOR_ID_LIST
+        cp = -1
+        if len(config.XHS_CREATOR_ID_LIST_FILE.strip()) > 0:
+            user_ids = open(config.XHS_CREATOR_ID_LIST_FILE.strip()).readlines()
+            if config.ENABLE_XHS_CREATOR_ID_CHECKPOINT:
+                cp_file = config.XHS_CREATOR_ID_LIST_FILE.strip() + '.checkpoint'
+                try:
+                    cp = int(open(cp_file, 'r').read())
+                    utils.logger.info(f"[XiaoHongShuCrawler.get_creators_and_notes] resume from checkpoint {cp}")
+                except FileNotFoundError:
+                    utils.logger.info("[XiaoHongShuCrawler.get_creators_and_notes] no checkpoint.")
+        #cp = 19182
+        index = cp + 1
+        end = len(user_ids)
+        if index >= end:
+            index = 0
+        if config.XHS_CREATOR_MAX_COUNT > 0:
+            end = index + config.XHS_CREATOR_MAX_COUNT
+                
+        while index < end:
+            uid = user_ids[index]
+            user_id = uid.strip()
+            utils.logger.info(f"[XiaoHongShuCrawler.get_creators_and_notes] fetching {user_id} {index}")
+
             # get creator detail info from web html content
             createor_info: Dict = await self.xhs_client.get_creator_info(user_id=user_id)
             if createor_info:
                 await xhs_store.save_creator(user_id, creator=createor_info)
 
-            # Get all note information of the creator
-            all_notes_list = await self.xhs_client.get_all_notes_by_creator(
-                user_id=user_id,
-                crawl_interval=random.random(),
-                callback=self.fetch_creator_notes_detail
-            )
+                # Get all note information of the creator
+                try:
+                    all_notes_list = await self.xhs_client.get_all_notes_by_creator(
+                        user_id=user_id,
+                        crawl_interval=random.random() * 3 + 1,
+                        callback=self.fetch_creator_notes_detail
+                    )
+                except UserBlockError as error:
+                    #nickname = createor_info.get('basicInfo', {}).get('nickname')
+                    #if nickname != self.INVALID_USER:
+                    #    raise error
+                    userAccountStatus = createor_info.get('userAccountStatus', {}).get('type')
+                    if userAccountStatus != 1 and userAccountStatus != 3: #1 blocked 3 unregisteded
+                        raise error
+                else:
+                    note_ids = [note_item.get("note_id") for note_item in all_notes_list]
+                    await self.batch_get_note_comments(note_ids)
+            else:
+                utils.logger.error(f"[XiaoHongShuCrawler.get_creators_and_notes] mission creator: {createor_info}")
 
-            note_ids = [note_item.get("note_id") for note_item in all_notes_list]
-            await self.batch_get_note_comments(note_ids)
+            if config.ENABLE_XHS_CREATOR_ID_CHECKPOINT:
+                bak = cp_file + '.bak'
+                f = open(bak, 'w')
+                f.write(str(index))
+                f.flush()
+                f.close()
+                shutil.move(bak, cp_file)
+
+            index = index + 1
+
 
     async def fetch_creator_notes_detail(self, note_list: List[Dict]):
         """
         Concurrently obtain the specified post list and save the data
         """
+        if not config.ENABLE_GET_NOTES:
+            for note in note_list:
+                await xhs_store.update_xhs_note(note)
+            return
+
         semaphore = asyncio.Semaphore(config.MAX_CONCURRENCY_NUM)
         task_list = [
             self.get_note_detail_async_task(

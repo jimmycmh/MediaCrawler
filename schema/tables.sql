@@ -275,6 +275,7 @@ CREATE TABLE `xhs_creator`
     `fans`           varchar(16)  DEFAULT NULL COMMENT '粉丝数',
     `interaction`    varchar(16)  DEFAULT NULL COMMENT '获赞和收藏数',
     `tag_list`       longtext COMMENT '标签列表',
+    `raw`            longtext COMMENT '原始json',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='小红书博主';
 
@@ -296,15 +297,18 @@ CREATE TABLE `xhs_note`
     `title`            varchar(255) DEFAULT NULL COMMENT '笔记标题',
     `desc`             longtext COMMENT '笔记描述',
     `video_url`        longtext COMMENT '视频地址',
-    `time`             bigint      NOT NULL COMMENT '笔记发布时间戳',
-    `last_update_time` bigint      NOT NULL COMMENT '笔记最后更新时间戳',
+    `time`             bigint      DEFAULT NULL COMMENT '笔记发布时间戳',
+    `last_update_time` bigint      DEFAULT NULL COMMENT '笔记最后更新时间戳',
     `liked_count`      varchar(16)  DEFAULT NULL COMMENT '笔记点赞数',
     `collected_count`  varchar(16)  DEFAULT NULL COMMENT '笔记收藏数',
     `comment_count`    varchar(16)  DEFAULT NULL COMMENT '笔记评论数',
     `share_count`      varchar(16)  DEFAULT NULL COMMENT '笔记分享数',
     `image_list`       longtext COMMENT '笔记封面图片列表',
     `tag_list`         longtext COMMENT '标签列表',
+    `tagid_list`       longtext COMMENT '标签id列表',
     `note_url`         varchar(255) DEFAULT NULL COMMENT '笔记详情页的URL',
+    `xsec_token`       varchar(255) DEFAULT NULL COMMENT '笔记详情页的xsec_token',
+    `raw`              longtext COMMENT '原始json',
     PRIMARY KEY (`id`),
     KEY                `idx_xhs_note_note_id_209457` (`note_id`),
     KEY                `idx_xhs_note_time_eaa910` (`time`)

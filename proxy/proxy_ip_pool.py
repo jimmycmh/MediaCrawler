@@ -9,7 +9,7 @@ import httpx
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 import config
-from proxy.providers import new_jisu_http_proxy, new_kuai_daili_proxy
+from proxy.providers import new_jisu_http_proxy, new_kuai_daili_proxy, new_static_proxy
 from tools import utils
 
 from .base_proxy import ProxyProvider
@@ -38,6 +38,7 @@ class ProxyIpPool:
 
         """
         self.proxy_list = await self.ip_provider.get_proxies(self.ip_pool_count)
+        utils.logger.info(f"[ProxyIpPool] {self.proxy_list}")
 
     async def _is_valid_proxy(self, proxy: IpInfoModel) -> bool:
         """
@@ -87,7 +88,8 @@ class ProxyIpPool:
 
 IpProxyProvider: Dict[str, ProxyProvider] = {
     ProviderNameEnum.JISHU_HTTP_PROVIDER.value: new_jisu_http_proxy(),
-    ProviderNameEnum.KUAI_DAILI_PROVIDER.value: new_kuai_daili_proxy()
+    ProviderNameEnum.KUAI_DAILI_PROVIDER.value: new_kuai_daili_proxy(),
+    ProviderNameEnum.STATIC_PROVIDER.value: new_static_proxy()
 }
 
 

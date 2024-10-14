@@ -12,7 +12,7 @@ import config
 from base.base_crawler import AbstractApiClient
 from tools import utils
 
-from .exception import DataFetchError, IPBlockError
+from .exception import DataFetchError, IPBlockError, UserBlockError
 from .field import SearchNoteType, SearchSortType
 from .help import get_search_id, sign
 
@@ -34,6 +34,7 @@ class XiaoHongShuClient(AbstractApiClient):
         self._domain = "https://www.xiaohongshu.com"
         self.IP_ERROR_STR = "网络连接异常，请检查网络设置或重启试试"
         self.IP_ERROR_CODE = 300012
+        self.USER_ERROR_STR = "无法获取数据，本用户已被禁止。请稍后再试"
         self.NOTE_ABNORMAL_STR = "笔记状态异常，请稍后查看"
         self.NOTE_ABNORMAL_CODE = -510001
         self.playwright_page = playwright_page
@@ -79,6 +80,7 @@ class XiaoHongShuClient(AbstractApiClient):
         Returns:
 
         """
+        utils.logger.info(f"[XiaoHongShuClient.request] try {url}")
         # return response.text
         return_response = kwargs.pop('return_response', False)
 
@@ -150,7 +152,8 @@ class XiaoHongShuClient(AbstractApiClient):
         ping_flag = False
         try:
             note_card: Dict = await self.get_note_by_keyword(keyword="小红书")
-            if note_card.get("items"):
+            creator_info: Dict = await self.get_creator_info(user_id="64084629000000001001eba2")
+            if note_card.get("items") and creator_info:
                 ping_flag = True
         except Exception as e:
             utils.logger.error(f"[XiaoHongShuClient.pong] Ping xhs failed: {e}, and try to login again...")
@@ -358,10 +361,13 @@ class XiaoHongShuClient(AbstractApiClient):
         match = re.search(r'<script>window.__INITIAL_STATE__=(.+)<\/script>', html_content, re.M)
 
         if match is None:
+            utils.logger.error(f"[XiaoHongShuClient.get_creator_info] no match")
+            utils.logger.error(f"[XiaoHongShuClient.get_creator_info] page html: {html_content}")
             return {}
 
         info = json.loads(match.group(1).replace(':undefined', ':null'), strict=False)
         if info is None:
+            utils.logger.error(f"[XiaoHongShuClient.get_creator_info] info is none")
             return {}
         return info.get('user').get('userPageData')
 
@@ -404,12 +410,13 @@ class XiaoHongShuClient(AbstractApiClient):
         result = []
         notes_has_more = True
         notes_cursor = ""
-        while notes_has_more:
+        page = config.PAGE_COUNT
+        while notes_has_more and page > 0:
             notes_res = await self.get_notes_by_creator(user_id, notes_cursor)
             if not notes_res:
                 utils.logger.error(
                     f"[XiaoHongShuClient.get_notes_by_creator] The current creator may have been banned by xhs, so they cannot access the data.")
-                break
+                raise UserBlockError(self.USER_ERROR_STR)
 
             notes_has_more = notes_res.get("has_more", False)
             notes_cursor = notes_res.get("cursor", "")
@@ -425,6 +432,7 @@ class XiaoHongShuClient(AbstractApiClient):
                 await callback(notes)
             await asyncio.sleep(crawl_interval)
             result.extend(notes)
+            page = page - 1
         return result
 
     async def get_note_short_url(self, note_id: str) -> Dict:
