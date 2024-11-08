@@ -63,7 +63,11 @@ class XiaoHongShuClient(AbstractApiClient):
             "X-S": signs["x-s"],
             "X-T": signs["x-t"],
             "x-S-Common": signs["x-s-common"],
-            "X-B3-Traceid": signs["x-b3-traceid"]
+            "X-B3-Traceid": signs["x-b3-traceid"],
+            "sec-ch-ua-platform": "macOS",
+            "sec-ch-ua": '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+            "sec-ch-ua-mobile": "?0",
+            "x-xray-traceid": "c98504c4957e979288d5ce108630cf70"
         }
         self.headers.update(headers)
         return self.headers

@@ -1,9 +1,8 @@
 # 基础配置
 PLATFORM = "xhs"
-KEYWORDS = "编程副业,编程兼职"
+KEYWORDS = "宝格丽"
 LOGIN_TYPE = "cookie"  # qrcode or phone or cookie
-COOKIES = "unread={%22ub%22:%2266b43df3000000000d030f12%22%2C%22ue%22:%2266c5d40d000000001d0169d0%22%2C%22uc%22:15}; acw_tc=66db0c2924dfb1a510bf95dc5c8bcec3d968d28b1d7917b7d5735d265bf66c26; sec_poison_id=2afce1b6-b1ad-418b-91b5-41deaa010fa4; websectiga=9730ffafd96f2d09dc024760e253af6ab1feb0002827740b95a255ddf6847fc8; gid=yjy4WYWWYqKiyjy4WYW2fCD9ydVlYj2fF77IY21VKEA3quq886UqkF8884y2jq88YdKSJdKS; webBuild=4.31.2; xsecappid=xhs-pc-web; web_session=040069b38b466d07ae330df2f3344b02e84074; a1=191733d2e9eq48hsk17euo9lcbq6x1ll81iheeqfk30000219643; webId=41fdb0d06b343756d1bd5a56ff8cc11c; abRequestId=ca11363f-a630-5b8d-8108-b6907da90113"
-#COOKIES = "gid=yjy4WYWWYqKiyjy4WYW2fCD9ydVlYj2fF77IY21VKEA3quq886UqkF8884y2jq88YdKSJdKS; unread={%22ub%22:%2266c31818000000001d015b45%22%2C%22ue%22:%2266c5d40d000000001d0169d0%22%2C%22uc%22:31}; webBuild=4.31.2; xsecappid=xhs-pc-web; sec_poison_id=05203f83-cffb-41d1-a977-4326c05416f1; websectiga=2845367ec3848418062e761c09db7caf0e8b79d132ccdd1a4f8e64a11d0cac0d; web_session=040069b38b466d07ae330df2f3344b02e84074; acw_tc=21fa96335627c37833a1bc803abe5dfca7e9a134a37a365770a32bfd2b561266; a1=191733d2e9eq48hsk17euo9lcbq6x1ll81iheeqfk30000219643; webId=41fdb0d06b343756d1bd5a56ff8cc11c; abRequestId=ca11363f-a630-5b8d-8108-b6907da90113"
+COOKIES = "abRequestId=ca7a8196-936b-56d8-9c2e-6343e8f1812c; a1=192ba2e6c30wrfm06kpwo2jqarlr356jk0aj2vtg540000241904; webId=69fb699079e18c3562a907bf1a48ff50; gid=yjJD0JdWDKTKyjJD0JdKS8h9q8EFi68KTUEl0k2JVA0F1V48Fq2KVJ888J4yj848fyidJKiY; acw_tc=6446087144cc0efe23013f1e55e78ff42935476f788ea9c71d9324fb8e100d83; websectiga=10f9a40ba454a07755a08f27ef8194c53637eba4551cf9751c009g9afb564467; sec_poison_id=ea483e7a-32de-4212-b148-7b38234d4604; webBuild=4.42.1; web_session=040069b775c1bf7e8950c7ba18354be21663c4; unread={%22ub%22:%22671a0ac3000000002100628f%22%2C%22ue%22:%2267206052000000001b02f5b7%22%2C%22uc%22:26};"
 # 具体值参见media_platform.xxx.field下的枚举值，暂时只支持小红书
 SORT_TYPE = "popularity_descending"
 # 具体值参见media_platform.xxx.field下的枚举值，暂时只支持抖音
@@ -22,6 +21,7 @@ IP_PROXY_PROVIDER_NAME = "static"
 # 静态代理
 #123proxy IP_PROXY_LIST = ["45.86.230.119:36932:unewyear62396:HdYtLULoztav"]
 IP_PROXY_LIST = ["proxy.proxy302.com:2222:IEZlKqlG:g7tUeBVkyva4gGSv"]
+#IP_PROXY_LIST = ["localhost:8888::"]
 #通过使用隧道代理，无需软件频繁提取IP，代理隧道在云端自动切换请求的代理IP
         
 # 设置为True不会打开浏览器（无头浏览器）

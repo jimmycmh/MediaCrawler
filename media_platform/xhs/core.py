@@ -30,7 +30,8 @@ class XiaoHongShuCrawler(AbstractCrawler):
     def __init__(self) -> None:
         self.index_url = "https://www.xiaohongshu.com"
         # self.user_agent = utils.get_user_agent()
-        self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+        #self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+        self.user_agent = "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
         self.INVALID_USER = "用户已注销"
 
     async def start(self) -> None:
@@ -64,7 +65,7 @@ class XiaoHongShuCrawler(AbstractCrawler):
             # Create a client to interact with the xiaohongshu website.
             self.xhs_client = await self.create_xhs_client(httpx_proxy_format)
             retry = 3
-            while retry > 0 and not await self.xhs_client.pong():
+            while retry > 0:
                 login_obj = XiaoHongShuLogin(
                     login_type=config.LOGIN_TYPE,
                     login_phone="",  # input your phone number
@@ -74,6 +75,8 @@ class XiaoHongShuCrawler(AbstractCrawler):
                 )
                 await login_obj.begin()
                 await self.xhs_client.update_cookies(browser_context=self.browser_context)
+                if await self.xhs_client.pong():
+                    break
                 await asyncio.sleep(30)
                 retry = retry - 1
             if retry == 0:
