@@ -433,7 +433,9 @@ class XiaoHongShuClient(AbstractApiClient):
             utils.logger.info(
                 f"[XiaoHongShuClient.get_all_notes_by_creator] got user_id:{user_id} notes len : {len(notes)}")
             if callback:
-                await callback(notes)
+                notes_existing = await callback(notes)
+                if notes_existing:
+                    break
             await asyncio.sleep(crawl_interval)
             result.extend(notes)
             page = page - 1

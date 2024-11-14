@@ -53,6 +53,16 @@ def get_video_url_arr(note_item: Dict) -> List:
 
     return videoArr
 
+async def get_note(note_id: str) -> Dict:
+    """
+    从存储中读取note
+    Args:
+        :param note_id:
+
+    Returns:
+        note: Dict
+    """
+    return await XhsStoreFactory.create_store().get_content(note_id)
 
 async def update_xhs_note(note_item: Dict):
     """

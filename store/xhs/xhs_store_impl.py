@@ -160,6 +160,9 @@ class XhsDbStoreImplement(AbstractStore):
         else:
             await update_creator_by_user_id(user_id, creator)
 
+    async def get_content(self, content_id: str):
+        from .xhs_store_sql import (query_content_by_content_id)
+        return await query_content_by_content_id(content_id=content_id)
 
 class XhsJsonStoreImplement(AbstractStore):
     json_store_path: str = "data/xhs/json"

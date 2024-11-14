@@ -214,15 +214,28 @@ class XiaoHongShuCrawler(AbstractCrawler):
             index = index + 1
 
 
-    async def fetch_creator_notes_detail(self, note_list: List[Dict]):
+    async def remove_existing(self, notes: List[Dict]) -> List[Dict]:
+        new_notes = []
+        for note in notes:
+            note_id = note.get("note_id")
+            if await xhs_store.get_note(note_id):
+                utils.logger.info(f"[XiaoHongShuCrawler.remove_existing] Note {note_id} exists.")
+            else:
+                utils.logger.info(f"[XiaoHongShuCrawler.remove_existing] Note {note_id} is new.")
+                new_notes.append(note)
+        return new_notes
+
+    async def fetch_creator_notes_detail(self, note_list: List[Dict]) -> bool:
         """
         Concurrently obtain the specified post list and save the data
+        :return True if some of the notes already in the store
         """
         if not config.ENABLE_GET_NOTES:
             for note in note_list:
                 await xhs_store.update_xhs_note(note)
-            return
+            return False
 
+        new_notes = await self.remove_existing(note_list)
         semaphore = asyncio.Semaphore(config.MAX_CONCURRENCY_NUM)
         task_list = [
             self.get_note_detail_async_task(
@@ -231,13 +244,14 @@ class XiaoHongShuCrawler(AbstractCrawler):
                 xsec_token=post_item.get("xsec_token"),
                 semaphore=semaphore
             )
-            for post_item in note_list
+            for post_item in new_notes
         ]
 
         note_details = await asyncio.gather(*task_list)
         for note_detail in note_details:
             if note_detail:
                 await xhs_store.update_xhs_note(note_detail)
+        return len(new_notes) < len(note_list)
 
     async def get_specified_notes(self):
         """Get the information and comments of the specified post"""

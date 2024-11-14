@@ -66,6 +66,9 @@ class AbstractStore(ABC):
     async def store_creator(self, creator: Dict):
         pass
 
+    @abstractmethod
+    async def get_content(self, content_id: str):
+        pass
 
 class AbstractStoreImage(ABC):
     # TODO: support all platform
